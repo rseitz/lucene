@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermWithOffset;
 import org.apache.lucene.queries.spans.SpanNearQuery;
 import org.apache.lucene.queries.spans.SpanNotQuery;
 import org.apache.lucene.queries.spans.SpanOrQuery;
@@ -139,7 +140,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
   // to throw a runtime exception here if a term for another field is embedded
   // in phrase query
   @Override
-  protected Query newTermQuery(Term term, float boost) {
+  protected Query newTermQuery(TermWithOffset term, float boost) {
     if (isPass2ResolvingPhrases) {
       try {
         checkPhraseClauseIsForSameField(term.field());

@@ -25,10 +25,12 @@ import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermWithOffset;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostAttribute;
@@ -69,10 +71,13 @@ public class QueryBuilder {
     /** the boost */
     public final float boost;
 
+    public final int startOffset;
+
     /** Creates a new TermAndBoost */
-    public TermAndBoost(BytesRef term, float boost) {
+    public TermAndBoost(BytesRef term, float boost, int startOffset) {
       this.term = BytesRef.deepCopyOf(term);
       this.boost = boost;
+      this.startOffset = startOffset;
     }
   }
 
@@ -379,18 +384,22 @@ public class QueryBuilder {
       throw new AssertionError();
     }
 
-    return newTermQuery(new Term(field, termAtt.getBytesRef()), boostAtt.getBoost());
+    OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
+    //Term term = new Term(field, termAtt.getBytesRef());
+    TermWithOffset term = new TermWithOffset(field, termAtt.getBytesRef(), offsetAtt.startOffset());
+    return newTermQuery(term, boostAtt.getBoost());
   }
 
   /** Creates simple boolean query from the cached tokenstream contents */
   protected Query analyzeBoolean(String field, TokenStream stream) throws IOException {
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
+    OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
 
     stream.reset();
     List<TermAndBoost> terms = new ArrayList<>();
     while (stream.incrementToken()) {
-      terms.add(new TermAndBoost(termAtt.getBytesRef(), boostAtt.getBoost()));
+      terms.add(new TermAndBoost(termAtt.getBytesRef(), boostAtt.getBoost(), offsetAtt.startOffset()));
     }
 
     return newSynonymQuery(field, terms.toArray(TermAndBoost[]::new));
@@ -405,7 +414,8 @@ public class QueryBuilder {
       return;
     }
     if (current.size() == 1) {
-      q.add(newTermQuery(new Term(field, current.get(0).term), current.get(0).boost), operator);
+      TermWithOffset term = new TermWithOffset(field, current.get(0).term, current.get(0).startOffset);
+      q.add(newTermQuery(term, current.get(0).boost), operator);
     } else {
       q.add(newSynonymQuery(field, current.toArray(TermAndBoost[]::new)), operator);
     }
@@ -419,6 +429,7 @@ public class QueryBuilder {
 
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
+    OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
     BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
 
     stream.reset();
@@ -427,7 +438,7 @@ public class QueryBuilder {
         add(field, q, currentQuery, operator);
         currentQuery.clear();
       }
-      currentQuery.add(new TermAndBoost(termAtt.getBytesRef(), boostAtt.getBoost()));
+      currentQuery.add(new TermAndBoost(termAtt.getBytesRef(), boostAtt.getBoost(), offsetAtt.startOffset()));
     }
     add(field, q, currentQuery, operator);
 
@@ -440,6 +451,7 @@ public class QueryBuilder {
     builder.setSlop(slop);
 
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
     BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
     int position = -1;
@@ -451,7 +463,7 @@ public class QueryBuilder {
       } else {
         position += 1;
       }
-      builder.add(new Term(field, termAtt.getBytesRef()), position);
+      builder.add(new TermWithOffset(field, termAtt.getBytesRef(), offsetAtt.startOffset()), position);
       phraseBoost *= boostAtt.getBoost();
     }
     PhraseQuery query = builder.build();
@@ -468,7 +480,7 @@ public class QueryBuilder {
     mpqb.setSlop(slop);
 
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
-
+    OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
     int position = -1;
 
@@ -479,20 +491,20 @@ public class QueryBuilder {
 
       if (positionIncrement > 0 && multiTerms.size() > 0) {
         if (enablePositionIncrements) {
-          mpqb.add(multiTerms.toArray(new Term[0]), position);
+          mpqb.add(multiTerms.toArray(new TermWithOffset[0]), position);
         } else {
-          mpqb.add(multiTerms.toArray(new Term[0]));
+          mpqb.add(multiTerms.toArray(new TermWithOffset[0]));
         }
         multiTerms.clear();
       }
       position += positionIncrement;
-      multiTerms.add(new Term(field, termAtt.getBytesRef()));
+      multiTerms.add(new TermWithOffset(field, termAtt.getBytesRef(), offsetAtt.startOffset()));
     }
 
     if (enablePositionIncrements) {
-      mpqb.add(multiTerms.toArray(new Term[0]), position);
+      mpqb.add(multiTerms.toArray(new TermWithOffset[0]), position);
     } else {
-      mpqb.add(multiTerms.toArray(new Term[0]));
+      mpqb.add(multiTerms.toArray(new TermWithOffset[0]));
     }
     return mpqb.build();
   }
@@ -546,12 +558,14 @@ public class QueryBuilder {
                     s -> {
                       TermToBytesRefAttribute t = s.addAttribute(TermToBytesRefAttribute.class);
                       BoostAttribute b = s.addAttribute(BoostAttribute.class);
-                      return new TermAndBoost(t.getBytesRef(), b.getBoost());
+                      OffsetAttribute o = s.getAttribute(OffsetAttribute.class);
+                      return new TermAndBoost(t.getBytesRef(), b.getBoost(), o.startOffset());
                     })
                 .toArray(TermAndBoost[]::new);
         assert terms.length > 0;
         if (terms.length == 1) {
-          positionalQuery = newTermQuery(new Term(field, terms[0].term), terms[0].boost);
+          TermWithOffset term = new TermWithOffset(field, terms[0].term, terms[0].startOffset);
+          positionalQuery = newTermQuery(term, terms[0].boost);
         } else {
           positionalQuery = newSynonymQuery(field, terms);
         }
@@ -604,7 +618,7 @@ public class QueryBuilder {
   protected Query newSynonymQuery(String field, TermAndBoost[] terms) {
     SynonymQuery.Builder builder = new SynonymQuery.Builder(field);
     for (TermAndBoost t : terms) {
-      builder.addTerm(t.term, t.boost);
+      builder.addTerm(t.term, t.boost, t.startOffset);
     }
     return builder.build();
   }
@@ -636,7 +650,7 @@ public class QueryBuilder {
    * @param term term
    * @return new TermQuery instance
    */
-  protected Query newTermQuery(Term term, float boost) {
+  protected Query newTermQuery(TermWithOffset term, float boost) {
     Query q = new TermQuery(term);
     if (boost == DEFAULT_BOOST) {
       return q;

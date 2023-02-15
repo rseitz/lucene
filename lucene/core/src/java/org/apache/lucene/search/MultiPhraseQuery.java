@@ -32,6 +32,7 @@ import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
+import org.apache.lucene.index.TermWithOffset;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
@@ -345,11 +346,17 @@ public class MultiPhraseQuery extends Query {
         buffer.append("(");
         for (int j = 0; j < terms.length; j++) {
           buffer.append(terms[j].text());
+          if (terms[j] instanceof TermWithOffset) {
+            buffer.append("[" + ((TermWithOffset)terms[j]).getStartOffset() + "]");
+          }
           if (j < terms.length - 1) buffer.append(" ");
         }
         buffer.append(")");
       } else {
         buffer.append(terms[0].text());
+        if (terms[0] instanceof TermWithOffset) {
+          buffer.append("[" + ((TermWithOffset)terms[0]).getStartOffset() + "]");
+        }
       }
       lastPos = position;
     }

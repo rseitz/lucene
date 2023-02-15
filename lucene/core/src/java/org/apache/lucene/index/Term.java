@@ -33,7 +33,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * <p>Note that terms may represent more than words from text fields, but also things like dates,
  * email addresses, urls, etc.
  */
-public final class Term implements Comparable<Term>, Accountable {
+public class Term implements Comparable<Term>, Accountable {
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(Term.class)
           + RamUsageEstimator.shallowSizeOfInstance(BytesRef.class);
@@ -181,7 +181,7 @@ public final class Term implements Comparable<Term>, Accountable {
   }
 
   @Override
-  public final String toString() {
+  public String toString() {
     return field + ":" + text();
   }
 

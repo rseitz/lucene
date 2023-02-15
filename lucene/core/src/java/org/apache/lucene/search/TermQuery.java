@@ -26,6 +26,7 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
+import org.apache.lucene.index.TermWithOffset;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 
@@ -249,6 +250,11 @@ public class TermQuery extends Query {
       buffer.append(":");
     }
     buffer.append(term.text());
+
+    if (term instanceof TermWithOffset) {
+      buffer.append("[" + ((TermWithOffset)term).getStartOffset() + "]");
+    }
+
     return buffer.toString();
   }
 
