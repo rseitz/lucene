@@ -252,7 +252,7 @@ public class TermQuery extends Query {
     buffer.append(term.text());
 
     if (term instanceof TermWithOffset) {
-      buffer.append("[" + ((TermWithOffset)term).getStartOffset() + "]");
+      buffer.append("[" + ((TermWithOffset) term).getStartOffset() + "]");
     }
 
     return buffer.toString();

@@ -104,13 +104,13 @@ public final class SynonymQuery extends Query {
      * boosted by {@code boost}.
      */
     public Builder addTerm(BytesRef term, float boost) {
-      return addTerm(term, boost,0);
+      return addTerm(term, boost, 0);
     }
 
     public Builder addTerm(BytesRef term, float boost, int startOffset) {
       if (Float.isNaN(boost) || Float.compare(boost, 0f) <= 0 || Float.compare(boost, 1f) > 0) {
         throw new IllegalArgumentException(
-          "boost must be a positive float between 0 (exclusive) and 1 (inclusive)");
+            "boost must be a positive float between 0 (exclusive) and 1 (inclusive)");
       }
       terms.add(new TermAndBoost(term, boost, startOffset));
       if (terms.size() > IndexSearcher.getMaxClauseCount()) {
@@ -118,7 +118,6 @@ public final class SynonymQuery extends Query {
       }
       return this;
     }
-
 
     /** Builds the {@link SynonymQuery}. */
     public SynonymQuery build() {
@@ -139,7 +138,9 @@ public final class SynonymQuery extends Query {
 
   public List<Term> getTerms() {
     return Collections.unmodifiableList(
-        Arrays.stream(terms).map(t -> new TermWithOffset(field, t.term, t.startOffset)).collect(Collectors.toList()));
+        Arrays.stream(terms)
+            .map(t -> new TermWithOffset(field, t.term, t.startOffset))
+            .collect(Collectors.toList()));
   }
 
   @Override
@@ -149,7 +150,8 @@ public final class SynonymQuery extends Query {
       if (i != 0) {
         builder.append(" ");
       }
-      Query termQuery = new TermQuery(new TermWithOffset(this.field, terms[i].term, terms[i].startOffset));
+      Query termQuery =
+          new TermQuery(new TermWithOffset(this.field, terms[i].term, terms[i].startOffset));
       builder.append(termQuery.toString(field));
       if (terms[i].boost != 1f) {
         builder.append("^");
@@ -656,6 +658,7 @@ public final class SynonymQuery extends Query {
     final BytesRef term;
     final float boost;
     public final int startOffset;
+
     TermAndBoost(BytesRef term, float boost, int startOffset) {
       this.term = term;
       this.boost = boost;
@@ -667,7 +670,9 @@ public final class SynonymQuery extends Query {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       TermAndBoost that = (TermAndBoost) o;
-      return Float.compare(that.boost, boost) == 0 && Objects.equals(term, that.term) && Objects.equals(startOffset, that.startOffset);
+      return Float.compare(that.boost, boost) == 0
+          && Objects.equals(term, that.term)
+          && Objects.equals(startOffset, that.startOffset);
     }
 
     @Override

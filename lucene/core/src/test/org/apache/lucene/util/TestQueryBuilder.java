@@ -17,8 +17,6 @@
 package org.apache.lucene.util;
 
 import java.io.IOException;
-import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.TokenFilter;
@@ -93,8 +91,10 @@ public class TestQueryBuilder extends LuceneTestCase {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
     expectedB.add(new TermQuery(new TermWithOffset("field", "one", 0)), BooleanClause.Occur.SHOULD);
     expectedB.add(new TermQuery(new TermWithOffset("field", "two", 4)), BooleanClause.Occur.SHOULD);
-    expectedB.add(new TermQuery(new TermWithOffset("field", "three", 8)), BooleanClause.Occur.SHOULD);
-    expectedB.add(new TermQuery(new TermWithOffset("field", "four", 14)), BooleanClause.Occur.SHOULD);
+    expectedB.add(
+        new TermQuery(new TermWithOffset("field", "three", 8)), BooleanClause.Occur.SHOULD);
+    expectedB.add(
+        new TermQuery(new TermWithOffset("field", "four", 14)), BooleanClause.Occur.SHOULD);
     expectedB.setMinimumNumberShouldMatch(0);
     Query expected = expectedB.build();
 
@@ -166,24 +166,26 @@ public class TestQueryBuilder extends LuceneTestCase {
   public void testSynonymsPhrase() throws Exception {
     MultiPhraseQuery.Builder expectedBuilder = new MultiPhraseQuery.Builder();
     expectedBuilder.add(new TermWithOffset("field", "old", 0));
-    expectedBuilder.add(new TermWithOffset[] {new TermWithOffset("field", "dogs", 4),
-      new TermWithOffset("field", "dog", 4)});
+    expectedBuilder.add(
+        new TermWithOffset[] {
+          new TermWithOffset("field", "dogs", 4), new TermWithOffset("field", "dog", 4)
+        });
     QueryBuilder builder = new QueryBuilder(new MockSynonymAnalyzer());
-    MultiPhraseQuery q = (MultiPhraseQuery)builder.createPhraseQuery("field", "old dogs");
+    MultiPhraseQuery q = (MultiPhraseQuery) builder.createPhraseQuery("field", "old dogs");
     Term[][] terms = q.getTermArrays();
     assertEquals(expectedBuilder.build(), q);
   }
 
   /** forms graph query */
   public void testMultiWordSynonymsPhrase() {
-    TermWithOffset[] terms = new TermWithOffset[] {
-      new TermWithOffset("field", "guinea", 0),
-      new TermWithOffset("field", "pig", 7)
-    };
+    TermWithOffset[] terms =
+        new TermWithOffset[] {
+          new TermWithOffset("field", "guinea", 0), new TermWithOffset("field", "pig", 7)
+        };
     int[] positions = new int[] {0, 1};
     Query expected =
         new BooleanQuery.Builder()
-  //          .add(new PhraseQuery("field", "guinea", "pig"), BooleanClause.Occur.SHOULD)
+            //          .add(new PhraseQuery("field", "guinea", "pig"), BooleanClause.Occur.SHOULD)
             .add(new PhraseQuery(0, terms, positions), BooleanClause.Occur.SHOULD)
             .add(new TermQuery(new TermWithOffset("field", "cavy", 0)), BooleanClause.Occur.SHOULD)
             .build();
@@ -214,7 +216,8 @@ public class TestQueryBuilder extends LuceneTestCase {
         new BooleanClause.Occur[] {BooleanClause.Occur.SHOULD, BooleanClause.Occur.MUST}) {
       Query syn1 =
           new BooleanQuery.Builder()
-              .add(new TermQuery(new TermWithOffset("field", "guinea", 0)), BooleanClause.Occur.MUST)
+              .add(
+                  new TermQuery(new TermWithOffset("field", "guinea", 0)), BooleanClause.Occur.MUST)
               .add(new TermQuery(new TermWithOffset("field", "pig", 7)), BooleanClause.Occur.MUST)
               .build();
       Query syn2 = new TermQuery(new TermWithOffset("field", "cavy", 0));
@@ -242,18 +245,18 @@ public class TestQueryBuilder extends LuceneTestCase {
           queryBuilder.createBooleanQuery("field", "guinea pig story", occur));
 
       Query syn11 =
-        new BooleanQuery.Builder()
-          .add(new TermQuery(new TermWithOffset("field", "guinea", 4)), BooleanClause.Occur.MUST)
-          .add(new TermQuery(new TermWithOffset("field", "pig", 11)), BooleanClause.Occur.MUST)
-          .build();
+          new BooleanQuery.Builder()
+              .add(
+                  new TermQuery(new TermWithOffset("field", "guinea", 4)), BooleanClause.Occur.MUST)
+              .add(new TermQuery(new TermWithOffset("field", "pig", 11)), BooleanClause.Occur.MUST)
+              .build();
       Query syn22 = new TermQuery(new TermWithOffset("field", "cavy", 4));
 
       BooleanQuery synQuery2 =
-        new BooleanQuery.Builder()
-          .add(syn11, BooleanClause.Occur.SHOULD)
-          .add(syn22, BooleanClause.Occur.SHOULD)
-          .build();
-
+          new BooleanQuery.Builder()
+              .add(syn11, BooleanClause.Occur.SHOULD)
+              .add(syn22, BooleanClause.Occur.SHOULD)
+              .build();
 
       expectedBooleanQuery =
           new BooleanQuery.Builder()
@@ -265,24 +268,20 @@ public class TestQueryBuilder extends LuceneTestCase {
           expectedBooleanQuery,
           queryBuilder.createBooleanQuery("field", "the guinea pig story", occur));
 
-
-
-
-
       Query syn111 =
-        new BooleanQuery.Builder()
-          .add(new TermQuery(new TermWithOffset("field", "guinea", 21)), BooleanClause.Occur.MUST)
-          .add(new TermQuery(new TermWithOffset("field", "pig", 28)), BooleanClause.Occur.MUST)
-          .build();
+          new BooleanQuery.Builder()
+              .add(
+                  new TermQuery(new TermWithOffset("field", "guinea", 21)),
+                  BooleanClause.Occur.MUST)
+              .add(new TermQuery(new TermWithOffset("field", "pig", 28)), BooleanClause.Occur.MUST)
+              .build();
       Query syn222 = new TermQuery(new TermWithOffset("field", "cavy", 21));
 
       BooleanQuery synQuery3 =
-        new BooleanQuery.Builder()
-          .add(syn111, BooleanClause.Occur.SHOULD)
-          .add(syn222, BooleanClause.Occur.SHOULD)
-          .build();
-
-
+          new BooleanQuery.Builder()
+              .add(syn111, BooleanClause.Occur.SHOULD)
+              .add(syn222, BooleanClause.Occur.SHOULD)
+              .build();
 
       expectedBooleanQuery =
           new BooleanQuery.Builder()
@@ -328,21 +327,18 @@ public class TestQueryBuilder extends LuceneTestCase {
           expectedBooleanQuery,
           queryBuilder.createBooleanQuery("field", "guinea pig story", occur));
 
-
-
-
       syn1 =
-        new PhraseQuery.Builder()
-          .add(new TermWithOffset("field", "guinea", 4))
-          .add(new TermWithOffset("field", "pig", 11))
-          .build();
+          new PhraseQuery.Builder()
+              .add(new TermWithOffset("field", "guinea", 4))
+              .add(new TermWithOffset("field", "pig", 11))
+              .build();
       syn2 = new TermQuery(new TermWithOffset("field", "cavy", 4));
 
       synQuery =
-        new BooleanQuery.Builder()
-          .add(syn1, BooleanClause.Occur.SHOULD)
-          .add(syn2, BooleanClause.Occur.SHOULD)
-          .build();
+          new BooleanQuery.Builder()
+              .add(syn1, BooleanClause.Occur.SHOULD)
+              .add(syn2, BooleanClause.Occur.SHOULD)
+              .build();
       expectedBooleanQuery =
           new BooleanQuery.Builder()
               .add(new TermQuery(new TermWithOffset("field", "the", 0)), occur)
@@ -353,19 +349,18 @@ public class TestQueryBuilder extends LuceneTestCase {
           expectedBooleanQuery,
           queryBuilder.createBooleanQuery("field", "the guinea pig story", occur));
 
-
       Query syn11 =
-        new PhraseQuery.Builder()
-          .add(new TermWithOffset("field", "guinea", 21))
-          .add(new TermWithOffset("field", "pig", 28))
-          .build();
+          new PhraseQuery.Builder()
+              .add(new TermWithOffset("field", "guinea", 21))
+              .add(new TermWithOffset("field", "pig", 28))
+              .build();
       Query syn22 = new TermQuery(new TermWithOffset("field", "cavy", 21));
 
       Query synQuery2 =
-        new BooleanQuery.Builder()
-          .add(syn11, BooleanClause.Occur.SHOULD)
-          .add(syn22, BooleanClause.Occur.SHOULD)
-          .build();
+          new BooleanQuery.Builder()
+              .add(syn11, BooleanClause.Occur.SHOULD)
+              .add(syn22, BooleanClause.Occur.SHOULD)
+              .build();
 
       expectedBooleanQuery =
           new BooleanQuery.Builder()
@@ -383,6 +378,7 @@ public class TestQueryBuilder extends LuceneTestCase {
   protected static class SimpleCJKTokenizer extends Tokenizer {
     private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+
     public SimpleCJKTokenizer() {
       super();
     }
@@ -395,7 +391,7 @@ public class TestQueryBuilder extends LuceneTestCase {
       if (ch < 0) return false;
       clearAttributes();
       termAtt.setEmpty().append((char) ch);
-      offsetAtt.setOffset(count, count+1);
+      offsetAtt.setOffset(count, count + 1);
       count++;
       return true;
     }
@@ -424,10 +420,14 @@ public class TestQueryBuilder extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
 
-//    PhraseQuery expected = new PhraseQuery("field", "中", "国");
-    PhraseQuery expected = new PhraseQuery(0,
-      new TermWithOffset[] {new TermWithOffset("field","中",0), new TermWithOffset("field","国", 1)},
-      new int[] {0,1});
+    //    PhraseQuery expected = new PhraseQuery("field", "中", "国");
+    PhraseQuery expected =
+        new PhraseQuery(
+            0,
+            new TermWithOffset[] {
+              new TermWithOffset("field", "中", 0), new TermWithOffset("field", "国", 1)
+            },
+            new int[] {0, 1});
 
     QueryBuilder builder = new QueryBuilder(analyzer);
     assertEquals(expected, builder.createPhraseQuery("field", "中国"));
@@ -437,10 +437,14 @@ public class TestQueryBuilder extends LuceneTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
 
-//    PhraseQuery expected = new PhraseQuery(3, "field", "中", "国");
-    PhraseQuery expected = new PhraseQuery(3,
-      new TermWithOffset[] {new TermWithOffset("field","中",0), new TermWithOffset("field","国", 1)},
-      new int[] {0,1});
+    //    PhraseQuery expected = new PhraseQuery(3, "field", "中", "国");
+    PhraseQuery expected =
+        new PhraseQuery(
+            3,
+            new TermWithOffset[] {
+              new TermWithOffset("field", "中", 0), new TermWithOffset("field", "国", 1)
+            },
+            new int[] {0, 1});
 
     QueryBuilder builder = new QueryBuilder(analyzer);
     assertEquals(expected, builder.createPhraseQuery("field", "中国", 3));
@@ -577,7 +581,10 @@ public class TestQueryBuilder extends LuceneTestCase {
   public void testCJKSynonymsPhrase() throws Exception {
     MultiPhraseQuery.Builder expectedBuilder = new MultiPhraseQuery.Builder();
     expectedBuilder.add(new TermWithOffset("field", "中", 0));
-    expectedBuilder.add(new TermWithOffset[] {new TermWithOffset("field", "国",1), new TermWithOffset("field", "國", 1)});
+    expectedBuilder.add(
+        new TermWithOffset[] {
+          new TermWithOffset("field", "国", 1), new TermWithOffset("field", "國", 1)
+        });
     QueryBuilder builder = new QueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(expectedBuilder.build(), builder.createPhraseQuery("field", "中国"));
 

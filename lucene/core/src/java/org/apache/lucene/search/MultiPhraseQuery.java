@@ -347,7 +347,7 @@ public class MultiPhraseQuery extends Query {
         for (int j = 0; j < terms.length; j++) {
           buffer.append(terms[j].text());
           if (terms[j] instanceof TermWithOffset) {
-            buffer.append("[" + ((TermWithOffset)terms[j]).getStartOffset() + "]");
+            buffer.append("[" + ((TermWithOffset) terms[j]).getStartOffset() + "]");
           }
           if (j < terms.length - 1) buffer.append(" ");
         }
@@ -355,7 +355,7 @@ public class MultiPhraseQuery extends Query {
       } else {
         buffer.append(terms[0].text());
         if (terms[0] instanceof TermWithOffset) {
-          buffer.append("[" + ((TermWithOffset)terms[0]).getStartOffset() + "]");
+          buffer.append("[" + ((TermWithOffset) terms[0]).getStartOffset() + "]");
         }
       }
       lastPos = position;

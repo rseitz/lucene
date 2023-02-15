@@ -385,7 +385,7 @@ public class QueryBuilder {
     }
 
     OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
-    //Term term = new Term(field, termAtt.getBytesRef());
+    // Term term = new Term(field, termAtt.getBytesRef());
     TermWithOffset term = new TermWithOffset(field, termAtt.getBytesRef(), offsetAtt.startOffset());
     return newTermQuery(term, boostAtt.getBoost());
   }
@@ -399,7 +399,8 @@ public class QueryBuilder {
     stream.reset();
     List<TermAndBoost> terms = new ArrayList<>();
     while (stream.incrementToken()) {
-      terms.add(new TermAndBoost(termAtt.getBytesRef(), boostAtt.getBoost(), offsetAtt.startOffset()));
+      terms.add(
+          new TermAndBoost(termAtt.getBytesRef(), boostAtt.getBoost(), offsetAtt.startOffset()));
     }
 
     return newSynonymQuery(field, terms.toArray(TermAndBoost[]::new));
@@ -414,7 +415,8 @@ public class QueryBuilder {
       return;
     }
     if (current.size() == 1) {
-      TermWithOffset term = new TermWithOffset(field, current.get(0).term, current.get(0).startOffset);
+      TermWithOffset term =
+          new TermWithOffset(field, current.get(0).term, current.get(0).startOffset);
       q.add(newTermQuery(term, current.get(0).boost), operator);
     } else {
       q.add(newSynonymQuery(field, current.toArray(TermAndBoost[]::new)), operator);
@@ -438,7 +440,8 @@ public class QueryBuilder {
         add(field, q, currentQuery, operator);
         currentQuery.clear();
       }
-      currentQuery.add(new TermAndBoost(termAtt.getBytesRef(), boostAtt.getBoost(), offsetAtt.startOffset()));
+      currentQuery.add(
+          new TermAndBoost(termAtt.getBytesRef(), boostAtt.getBoost(), offsetAtt.startOffset()));
     }
     add(field, q, currentQuery, operator);
 
@@ -463,7 +466,8 @@ public class QueryBuilder {
       } else {
         position += 1;
       }
-      builder.add(new TermWithOffset(field, termAtt.getBytesRef(), offsetAtt.startOffset()), position);
+      builder.add(
+          new TermWithOffset(field, termAtt.getBytesRef(), offsetAtt.startOffset()), position);
       phraseBoost *= boostAtt.getBoost();
     }
     PhraseQuery query = builder.build();
