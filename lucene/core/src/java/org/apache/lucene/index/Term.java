@@ -41,6 +41,12 @@ public class Term implements Comparable<Term>, Accountable {
   String field;
   BytesRef bytes;
 
+  private int startOffset = 0;
+
+  public int getStartOffset() {
+    return startOffset;
+  }
+
   /**
    * Constructs a Term with the given field and bytes.
    *
@@ -84,6 +90,18 @@ public class Term implements Comparable<Term>, Accountable {
   public Term(String fld) {
     this(fld, new BytesRef());
   }
+
+  public Term(String fld, BytesRef bytes, int startOffset) {
+    field = fld;
+    this.bytes = bytes == null ? null : BytesRef.deepCopyOf(bytes);
+    this.startOffset = startOffset;
+  }
+
+  public Term(String fld, String text, int startOffset) {
+    this(fld, new BytesRef(text));
+    this.startOffset = startOffset;
+  }
+
 
   /**
    * Returns the field of this term. The field indicates the part of a document which this term came
@@ -140,6 +158,7 @@ public class Term implements Comparable<Term>, Accountable {
     if (bytes == null) {
       if (other.bytes != null) return false;
     } else if (!bytes.equals(other.bytes)) return false;
+    if (startOffset != other.startOffset) return false;
     return true;
   }
 
@@ -149,6 +168,7 @@ public class Term implements Comparable<Term>, Accountable {
     int result = 1;
     result = prime * result + ((field == null) ? 0 : field.hashCode());
     result = prime * result + ((bytes == null) ? 0 : bytes.hashCode());
+    result = prime * result + Integer.valueOf(startOffset).hashCode();
     return result;
   }
 

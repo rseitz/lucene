@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermWithOffset;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostAttribute;
@@ -386,7 +385,7 @@ public class QueryBuilder {
 
     OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
     // Term term = new Term(field, termAtt.getBytesRef());
-    TermWithOffset term = new TermWithOffset(field, termAtt.getBytesRef(), offsetAtt.startOffset());
+    Term term = new Term(field, termAtt.getBytesRef(), offsetAtt.startOffset());
     return newTermQuery(term, boostAtt.getBoost());
   }
 
@@ -415,8 +414,8 @@ public class QueryBuilder {
       return;
     }
     if (current.size() == 1) {
-      TermWithOffset term =
-          new TermWithOffset(field, current.get(0).term, current.get(0).startOffset);
+      Term term =
+          new Term(field, current.get(0).term, current.get(0).startOffset);
       q.add(newTermQuery(term, current.get(0).boost), operator);
     } else {
       q.add(newSynonymQuery(field, current.toArray(TermAndBoost[]::new)), operator);
@@ -467,7 +466,7 @@ public class QueryBuilder {
         position += 1;
       }
       builder.add(
-          new TermWithOffset(field, termAtt.getBytesRef(), offsetAtt.startOffset()), position);
+          new Term(field, termAtt.getBytesRef(), offsetAtt.startOffset()), position);
       phraseBoost *= boostAtt.getBoost();
     }
     PhraseQuery query = builder.build();
@@ -495,20 +494,20 @@ public class QueryBuilder {
 
       if (positionIncrement > 0 && multiTerms.size() > 0) {
         if (enablePositionIncrements) {
-          mpqb.add(multiTerms.toArray(new TermWithOffset[0]), position);
+          mpqb.add(multiTerms.toArray(new Term[0]), position);
         } else {
-          mpqb.add(multiTerms.toArray(new TermWithOffset[0]));
+          mpqb.add(multiTerms.toArray(new Term[0]));
         }
         multiTerms.clear();
       }
       position += positionIncrement;
-      multiTerms.add(new TermWithOffset(field, termAtt.getBytesRef(), offsetAtt.startOffset()));
+      multiTerms.add(new Term(field, termAtt.getBytesRef(), offsetAtt.startOffset()));
     }
 
     if (enablePositionIncrements) {
-      mpqb.add(multiTerms.toArray(new TermWithOffset[0]), position);
+      mpqb.add(multiTerms.toArray(new Term[0]), position);
     } else {
-      mpqb.add(multiTerms.toArray(new TermWithOffset[0]));
+      mpqb.add(multiTerms.toArray(new Term[0]));
     }
     return mpqb.build();
   }
@@ -568,7 +567,7 @@ public class QueryBuilder {
                 .toArray(TermAndBoost[]::new);
         assert terms.length > 0;
         if (terms.length == 1) {
-          TermWithOffset term = new TermWithOffset(field, terms[0].term, terms[0].startOffset);
+          Term term = new Term(field, terms[0].term, terms[0].startOffset);
           positionalQuery = newTermQuery(term, terms[0].boost);
         } else {
           positionalQuery = newSynonymQuery(field, terms);
@@ -654,7 +653,7 @@ public class QueryBuilder {
    * @param term term
    * @return new TermQuery instance
    */
-  protected Query newTermQuery(TermWithOffset term, float boost) {
+  protected Query newTermQuery(Term term, float boost) {
     Query q = new TermQuery(term);
     if (boost == DEFAULT_BOOST) {
       return q;

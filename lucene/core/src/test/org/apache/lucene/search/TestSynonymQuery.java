@@ -133,10 +133,10 @@ public class TestSynonymQuery extends LuceneTestCase {
     assertEquals("Synonym()", new SynonymQuery.Builder("foo").build().toString());
     Term t1 = new Term("foo", "bar");
     assertEquals(
-        "Synonym(foo:bar[0])", new SynonymQuery.Builder("foo").addTerm(t1).build().toString());
+        "Synonym(foo:bar)", new SynonymQuery.Builder("foo").addTerm(t1).build().toString());
     Term t2 = new Term("foo", "baz");
     assertEquals(
-        "Synonym(foo:bar[0] foo:baz[0])",
+        "Synonym(foo:bar foo:baz)",
         new SynonymQuery.Builder("foo").addTerm(t1).addTerm(t2).build().toString());
   }
 

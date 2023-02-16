@@ -35,7 +35,6 @@ import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
-import org.apache.lucene.index.TermWithOffset;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
@@ -73,10 +72,6 @@ public final class SynonymQuery extends Query {
       return addTerm(term, 1f);
     }
 
-    public Builder addTerm(TermWithOffset term) {
-      return addTerm(term, 1f, term.getStartOffset());
-    }
-
     /**
      * Adds the provided {@code term} as a synonym, document frequencies of this term will be
      * boosted by {@code boost}.
@@ -86,13 +81,6 @@ public final class SynonymQuery extends Query {
         throw new IllegalArgumentException("Synonyms must be across the same field");
       }
       return addTerm(term.bytes(), boost, startOffset);
-    }
-
-    public Builder addTerm(TermWithOffset term, float boost) {
-      if (field.equals(term.field()) == false) {
-        throw new IllegalArgumentException("Synonyms must be across the same field");
-      }
-      return addTerm(term.bytes(), boost, term.getStartOffset());
     }
 
     public Builder addTerm(Term term, float boost) {
@@ -139,7 +127,7 @@ public final class SynonymQuery extends Query {
   public List<Term> getTerms() {
     return Collections.unmodifiableList(
         Arrays.stream(terms)
-            .map(t -> new TermWithOffset(field, t.term, t.startOffset))
+            .map(t -> new Term(field, t.term, t.startOffset))
             .collect(Collectors.toList()));
   }
 
@@ -151,7 +139,7 @@ public final class SynonymQuery extends Query {
         builder.append(" ");
       }
       Query termQuery =
-          new TermQuery(new TermWithOffset(this.field, terms[i].term, terms[i].startOffset));
+          new TermQuery(new Term(this.field, terms[i].term, terms[i].startOffset));
       builder.append(termQuery.toString(field));
       if (terms[i].boost != 1f) {
         builder.append("^");
