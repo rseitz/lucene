@@ -68,24 +68,27 @@ public final class SynonymQuery extends Query {
       this.field = field;
     }
 
-    /** Adds the provided {@code term} as a synonym. */
-    public Builder addTerm(Term term) {
-      return addTerm(term, 1f);
-    }
 
     /**
      * Adds the provided {@code term} as a synonym, document frequencies of this term will be
      * boosted by {@code boost}.
      */
-    public Builder addTerm(Term term, float boost) {
+    public Builder addTerm(Term term, float boost, int startOffset) {
       if (field.equals(term.field()) == false) {
         throw new IllegalArgumentException("Synonyms must be across the same field");
       }
+      return addTerm(term.field(), term.bytes(), boost, startOffset);
+    }
+
+
+
+
+    public Builder addTerm(String fld, BytesRef term, float boost, int startOffset) {
       if (Float.isNaN(boost) || Float.compare(boost, 0f) <= 0 || Float.compare(boost, 1f) > 0) {
         throw new IllegalArgumentException(
-            "boost must be a positive float between 0 (exclusive) and 1 (inclusive)");
+          "boost must be a positive float between 0 (exclusive) and 1 (inclusive)");
       }
-      terms.add(new TermAndBoost(term, boost));
+      terms.add(new TermAndBoost(new Term(fld, term, startOffset), boost, startOffset));
       if (terms.size() > IndexSearcher.getMaxClauseCount()) {
         throw new IndexSearcher.TooManyClauses();
       }
@@ -629,10 +632,12 @@ public final class SynonymQuery extends Query {
   private static class TermAndBoost {
     final Term term;
     final float boost;
+    public final int startOffset;
 
-    TermAndBoost(Term term, float boost) {
+    TermAndBoost(Term term, float boost, int startOffset) {
       this.term = term;
       this.boost = boost;
+      this.startOffset = startOffset;
     }
 
     Term getTerm() {
@@ -644,7 +649,9 @@ public final class SynonymQuery extends Query {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       TermAndBoost that = (TermAndBoost) o;
-      return Float.compare(that.boost, boost) == 0 && Objects.equals(term, that.term);
+      return Float.compare(that.boost, boost) == 0
+        && Objects.equals(term, that.term)
+        && Objects.equals(startOffset, that.startOffset);
     }
 
     @Override

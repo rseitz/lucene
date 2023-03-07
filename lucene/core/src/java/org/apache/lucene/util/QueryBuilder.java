@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -69,11 +70,21 @@ public class QueryBuilder {
     /** the boost */
     public final float boost;
 
+    public final int startOffset;
+
     /** Creates a new TermAndBoost */
-    public TermAndBoost(Term term, float boost) {
+    public TermAndBoost(Term term, float boost, int startOffset) {
       this.term = term;
       this.boost = boost;
+      this.startOffset = startOffset;
     }
+
+    public TermAndBoost(String fld, BytesRef bytesRef, float boost, int startOffset) {
+      this.term = new Term(fld, bytesRef, startOffset);
+      this.boost = boost;
+      this.startOffset = startOffset;
+    }
+
   }
 
   /** Creates a new QueryBuilder using the given analyzer. */
@@ -379,18 +390,22 @@ public class QueryBuilder {
       throw new AssertionError();
     }
 
-    return newTermQuery(new Term(field, termAtt.getBytesRef()), boostAtt.getBoost());
+    OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
+    Term term = new Term(field, termAtt.getBytesRef(), offsetAtt.startOffset());
+    return newTermQuery(term, boostAtt.getBoost());
   }
 
   /** Creates simple boolean query from the cached tokenstream contents */
   protected Query analyzeBoolean(String field, TokenStream stream) throws IOException {
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
+    OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
 
     stream.reset();
     List<TermAndBoost> terms = new ArrayList<>();
     while (stream.incrementToken()) {
-      terms.add(new TermAndBoost(new Term(field, termAtt.getBytesRef()), boostAtt.getBoost()));
+      terms.add(
+        new TermAndBoost(field, termAtt.getBytesRef(), boostAtt.getBoost(), offsetAtt.startOffset()));
     }
 
     return newSynonymQuery(terms.toArray(new TermAndBoost[0]));
@@ -417,6 +432,7 @@ public class QueryBuilder {
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
     BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
+    OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
 
     stream.reset();
     while (stream.incrementToken()) {
@@ -425,7 +441,8 @@ public class QueryBuilder {
         currentQuery.clear();
       }
       currentQuery.add(
-          new TermAndBoost(new Term(field, termAtt.getBytesRef()), boostAtt.getBoost()));
+          new TermAndBoost(new Term(field, termAtt.getBytesRef(), offsetAtt.startOffset()),
+            boostAtt.getBoost(), offsetAtt.startOffset()));
     }
     add(q, currentQuery, operator);
 
@@ -440,6 +457,8 @@ public class QueryBuilder {
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
+    OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
+
     int position = -1;
     float phraseBoost = DEFAULT_BOOST;
     stream.reset();
@@ -449,7 +468,7 @@ public class QueryBuilder {
       } else {
         position += 1;
       }
-      builder.add(new Term(field, termAtt.getBytesRef()), position);
+      builder.add(new Term(field, termAtt.getBytesRef(), offsetAtt.startOffset()), position);
       phraseBoost *= boostAtt.getBoost();
     }
     PhraseQuery query = builder.build();
@@ -466,7 +485,7 @@ public class QueryBuilder {
     mpqb.setSlop(slop);
 
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
-
+    OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
     int position = -1;
 
@@ -484,7 +503,7 @@ public class QueryBuilder {
         multiTerms.clear();
       }
       position += positionIncrement;
-      multiTerms.add(new Term(field, termAtt.getBytesRef()));
+      multiTerms.add(new Term(field, termAtt.getBytesRef(), offsetAtt.startOffset()));
     }
 
     if (enablePositionIncrements) {
@@ -544,12 +563,16 @@ public class QueryBuilder {
                     s -> {
                       TermToBytesRefAttribute t = s.addAttribute(TermToBytesRefAttribute.class);
                       BoostAttribute b = s.addAttribute(BoostAttribute.class);
-                      return new TermAndBoost(new Term(field, t.getBytesRef()), b.getBoost());
+                      OffsetAttribute o = s.getAttribute(OffsetAttribute.class);
+                      return new TermAndBoost(new Term(field, t.getBytesRef(), o.startOffset()), b.getBoost(), o.startOffset());
                     })
                 .toArray(TermAndBoost[]::new);
         assert terms.length > 0;
         if (terms.length == 1) {
-          positionalQuery = newTermQuery(terms[0].term, terms[0].boost);
+          //positionalQuery = newTermQuery(terms[0].term, terms[0].boost);
+          // TODO just use existing term?
+          Term term = new Term(field, terms[0].term.bytes(), terms[0].startOffset);
+          positionalQuery = newTermQuery(term, terms[0].boost);
         } else {
           positionalQuery = newSynonymQuery(terms);
         }
@@ -602,7 +625,7 @@ public class QueryBuilder {
   protected Query newSynonymQuery(TermAndBoost[] terms) {
     SynonymQuery.Builder builder = new SynonymQuery.Builder(terms[0].term.field());
     for (TermAndBoost t : terms) {
-      builder.addTerm(t.term, t.boost);
+      builder.addTerm(t.term, t.boost, t.startOffset);
     }
     return builder.build();
   }
